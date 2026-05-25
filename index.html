@@ -53,6 +53,33 @@ header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surf
 .form-input:focus, .form-select:focus { border-color: var(--accent); }
 .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239896a4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
 .form-select option { background: var(--surface); }
+
+/* Outros fields - animated reveal */
+.outros-fields {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+.outros-fields.visible {
+  max-height: 400px;
+  opacity: 1;
+}
+.outros-hint {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text3);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.input-suffix { position: relative; }
+.input-suffix .form-input { padding-right: 36px; }
+.input-suffix-label { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text3); pointer-events: none; }
+
 .price-preview { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
 .price-preview-label { font-size: 12px; color: var(--text3); }
 .price-preview-value { font-size: 15px; font-weight: 500; color: var(--accent); }
@@ -148,8 +175,34 @@ header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surf
         <option value="Peeling Promo">Peeling Promo</option>
         <option value="LPP PDRN">LPP PDRN</option>
         <option value="Aula avulsa">Aula avulsa</option>
+        <option value="Outros">Outros</option>
       </select>
     </div>
+
+    <!-- Campos extras apenas para "Outros" -->
+    <div class="outros-fields" id="outrosFields">
+      <div class="outros-hint">Preencha os detalhes do serviço personalizado abaixo.</div>
+      <div class="form-section">
+        <label class="form-label">Descrição do serviço</label>
+        <input class="form-input" id="inputOutrosDesc" type="text" placeholder="Ex: Massagem relaxante..." autocomplete="off" autocorrect="off">
+      </div>
+      <div class="input-row">
+        <div class="form-section">
+          <label class="form-label">Valor (R$)</label>
+          <div class="input-suffix">
+            <input class="form-input" id="inputOutrosValor" type="number" inputmode="decimal" placeholder="0" min="0" oninput="updatePreview()">
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">Seu ganho (%)</label>
+          <div class="input-suffix">
+            <input class="form-input" id="inputOutrosPct" type="number" inputmode="decimal" placeholder="70" min="0" max="100" oninput="updatePreview()">
+            <span class="input-suffix-label">%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="form-section">
       <label class="form-label">Cliente</label>
       <input class="form-input" id="inputCliente" type="text" placeholder="Nome da cliente..." autocomplete="off" autocorrect="off">
@@ -187,7 +240,6 @@ header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surf
 
 <div class="toast" id="toast"></div>
 
-<!-- SheetJS para exportar .xlsx -->
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SERVICOS = {
@@ -221,12 +273,38 @@ function fmtDate(iso) { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`;
 
 document.getElementById('inputData').value = now.toISOString().split('T')[0];
 
+function isOutros() {
+  return document.getElementById('selectServico').value === 'Outros';
+}
+
 function updatePreview() {
   const s = document.getElementById('selectServico').value;
+  const outrosFields = document.getElementById('outrosFields');
   const preview = document.getElementById('pricePreview');
-  if (!s || !SERVICOS[s]) { preview.style.display = 'none'; return; }
-  const { preco, ganho } = SERVICOS[s];
-  document.getElementById('previewValor').textContent = `${fmtR(preco)} × ${Math.round(ganho*100)}%`;
+
+  // Mostrar/ocultar campos de Outros
+  if (s === 'Outros') {
+    outrosFields.classList.add('visible');
+  } else {
+    outrosFields.classList.remove('visible');
+  }
+
+  if (!s) { preview.style.display = 'none'; return; }
+
+  let preco, ganho;
+
+  if (s === 'Outros') {
+    preco = parseFloat(document.getElementById('inputOutrosValor').value);
+    const pct = parseFloat(document.getElementById('inputOutrosPct').value);
+    if (!preco || !pct) { preview.style.display = 'none'; return; }
+    ganho = pct / 100;
+  } else {
+    if (!SERVICOS[s]) { preview.style.display = 'none'; return; }
+    preco = SERVICOS[s].preco;
+    ganho = SERVICOS[s].ganho;
+  }
+
+  document.getElementById('previewValor').textContent = `${fmtR(preco)} × ${Math.round(ganho * 100)}%`;
   document.getElementById('previewLiquido').textContent = fmtR(preco * ganho);
   preview.style.display = 'flex';
 }
@@ -235,19 +313,55 @@ function registrarAtendimento() {
   const servico = document.getElementById('selectServico').value;
   const cliente = document.getElementById('inputCliente').value.trim();
   const data = document.getElementById('inputData').value;
+
   if (!servico) { showToast('Selecione um serviço!', true); return; }
   if (!cliente) { showToast('Informe o nome da cliente!', true); return; }
   if (!data) { showToast('Informe a data!', true); return; }
-  const { preco, ganho } = SERVICOS[servico];
-  const record = { id: Date.now(), servico, cliente, data, preco, ganho, liquido: Math.round(preco * ganho) };
+
+  let preco, ganho, nomeServico;
+
+  if (servico === 'Outros') {
+    const desc = document.getElementById('inputOutrosDesc').value.trim();
+    preco = parseFloat(document.getElementById('inputOutrosValor').value);
+    const pct = parseFloat(document.getElementById('inputOutrosPct').value);
+
+    if (!desc) { showToast('Informe a descrição do serviço!', true); return; }
+    if (!preco || preco <= 0) { showToast('Informe o valor do serviço!', true); return; }
+    if (!pct || pct <= 0 || pct > 100) { showToast('Informe um percentual válido (1–100)!', true); return; }
+
+    ganho = pct / 100;
+    nomeServico = desc; // salva a descrição como nome do serviço
+  } else {
+    preco = SERVICOS[servico].preco;
+    ganho = SERVICOS[servico].ganho;
+    nomeServico = servico;
+  }
+
+  const record = {
+    id: Date.now(),
+    servico: nomeServico,
+    cliente,
+    data,
+    preco,
+    ganho,
+    liquido: Math.round(preco * ganho)
+  };
+
   const list = loadData();
   list.push(record);
   list.sort((a, b) => b.data.localeCompare(a.data));
   saveData(list);
+
+  // Limpar formulário
   document.getElementById('selectServico').value = '';
   document.getElementById('inputCliente').value = '';
+  document.getElementById('inputOutrosDesc').value = '';
+  document.getElementById('inputOutrosValor').value = '';
+  document.getElementById('inputOutrosPct').value = '';
+  document.getElementById('outrosFields').classList.remove('visible');
   document.getElementById('pricePreview').style.display = 'none';
   document.getElementById('inputData').value = now.toISOString().split('T')[0];
+
   updateSummary();
   showToast('✓ Atendimento registrado!');
 }
@@ -309,7 +423,6 @@ function exportarXLSX() {
   const mesLabel = `${MESES_FULL[activeMonth]} ${activeYear}`;
   const sorted = [...list].sort((a,b) => a.data.localeCompare(b.data));
 
-  // Sheet 1: Atendimentos
   const rows = [
     ['Relatório de Atendimentos — ' + mesLabel],
     [],
@@ -318,20 +431,14 @@ function exportarXLSX() {
   sorted.forEach(r => {
     rows.push([r.servico, r.cliente, fmtDate(r.data), r.preco, Math.round(r.ganho * 100) + '%', r.liquido]);
   });
-  // Totals
   const totalBruto = sorted.reduce((a,r) => a + r.preco, 0);
   const totalLiq = sorted.reduce((a,r) => a + r.liquido, 0);
   rows.push([]);
   rows.push(['', '', 'TOTAL', totalBruto, '', totalLiq]);
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{ wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 20 }];
 
-  // Column widths
-  ws['!cols'] = [
-    { wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 20 }
-  ];
-
-  // Sheet 2: Resumo por serviço
   const byService = {};
   sorted.forEach(r => {
     if (!byService[r.servico]) byService[r.servico] = { count: 0, bruto: 0, liq: 0 };
