@@ -87,7 +87,16 @@ header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surf
 .btn-register:active { transform: scale(0.98); opacity: 0.9; }
 .day-group { margin-bottom: 20px; }
 .day-header { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.atendimento-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; position: relative; }
+/* Swipe-to-delete wrapper */
+.swipe-wrapper { position: relative; margin-bottom: 8px; border-radius: var(--radius-sm); overflow: hidden; }
+.swipe-bg { position: absolute; inset: 0; background: var(--danger); display: flex; align-items: center; justify-content: flex-end; padding-right: 20px; border-radius: var(--radius-sm); }
+.swipe-bg-icon { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #fff; }
+.swipe-bg-icon svg { width: 20px; height: 20px; }
+.swipe-bg-icon span { font-size: 10px; font-weight: 600; letter-spacing: 0.05em; }
+.atendimento-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: center; gap: 12px; position: relative; touch-action: pan-y; user-select: none; transition: transform 0.25s ease; will-change: transform; }
+.atendimento-card.swiping { transition: none; }
+.atendimento-card.fly-out { transition: transform 0.25s ease, opacity 0.25s ease; }
+.swipe-wrapper.collapsing { transition: max-height 0.3s ease, opacity 0.3s ease, margin-bottom 0.3s ease; overflow: hidden; }
 .atendimento-dot { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; color: var(--accent); font-weight: 500; }
 .atendimento-info { flex: 1; min-width: 0; }
 .atendimento-servico { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -95,8 +104,6 @@ header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surf
 .atendimento-valor { text-align: right; }
 .valor-bruto { font-size: 14px; font-weight: 500; color: var(--text); }
 .valor-liquido { font-size: 11px; color: var(--success); margin-top: 1px; }
-.btn-del { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: transparent; border: none; color: var(--text3); font-size: 18px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; line-height: 1; }
-.atendimento-card:hover .btn-del, .atendimento-card:active .btn-del { opacity: 1; }
 .empty { text-align: center; padding: 48px 24px; }
 .empty-emoji { font-size: 40px; margin-bottom: 16px; }
 .empty-title { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
@@ -389,31 +396,111 @@ function renderHistorico() {
     html += `<div class="day-group"><div class="day-header">${fmtDate(day)}</div>`;
     byDay[day].forEach(r => {
       const initials = r.cliente.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
-      html += `<div class="atendimento-card">
-        <div class="atendimento-dot">${initials}</div>
-        <div class="atendimento-info">
-          <div class="atendimento-servico">${r.servico}</div>
-          <div class="atendimento-cliente">${r.cliente}</div>
+      html += `<div class="swipe-wrapper" data-id="${r.id}">
+        <div class="swipe-bg">
+          <div class="swipe-bg-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            <span>EXCLUIR</span>
+          </div>
         </div>
-        <div class="atendimento-valor">
-          <div class="valor-bruto">R$ ${r.preco}</div>
-          <div class="valor-liquido">→ R$ ${r.liquido}</div>
+        <div class="atendimento-card" data-id="${r.id}">
+          <div class="atendimento-dot">${initials}</div>
+          <div class="atendimento-info">
+            <div class="atendimento-servico">${r.servico}</div>
+            <div class="atendimento-cliente">${r.cliente}</div>
+          </div>
+          <div class="atendimento-valor">
+            <div class="valor-bruto">R$ ${r.preco}</div>
+            <div class="valor-liquido">→ R$ ${r.liquido}</div>
+          </div>
         </div>
-        <button class="btn-del" onclick="deletar(${r.id})">×</button>
       </div>`;
     });
     html += '</div>';
   });
   el.innerHTML = html;
+  initSwipe();
 }
 
-function deletar(id) {
-  if (!confirm('Excluir este atendimento?')) return;
+function deletar(id, cardEl) {
+  const wrapper = cardEl ? cardEl.closest('.swipe-wrapper') : document.querySelector(`.swipe-wrapper[data-id="${id}"]`);
   const list = loadData().filter(r => r.id !== id);
   saveData(list);
   updateSummary();
-  renderHistorico();
-  renderResumo();
+  if (wrapper) {
+    const h = wrapper.offsetHeight;
+    wrapper.style.maxHeight = h + 'px';
+    wrapper.style.opacity = '1';
+    wrapper.style.marginBottom = '8px';
+    wrapper.classList.add('collapsing');
+    requestAnimationFrame(() => {
+      wrapper.style.maxHeight = '0';
+      wrapper.style.opacity = '0';
+      wrapper.style.marginBottom = '0';
+    });
+    wrapper.addEventListener('transitionend', () => {
+      wrapper.remove();
+      // re-render resumo silently
+      renderResumo();
+      // clean up empty day groups
+      document.querySelectorAll('.day-group').forEach(g => {
+        if (!g.querySelector('.swipe-wrapper')) g.remove();
+      });
+      if (!loadData().length) renderHistorico();
+    }, { once: true });
+  } else {
+    renderHistorico();
+    renderResumo();
+  }
+}
+
+function initSwipe() {
+  const THRESHOLD = 80;
+  document.querySelectorAll('.atendimento-card').forEach(card => {
+    let startX = 0, startY = 0, curX = 0, dragging = false, locked = false;
+
+    function onStart(x, y) {
+      startX = x; startY = y; curX = 0; dragging = true; locked = false;
+      card.classList.add('swiping');
+    }
+    function onMove(x, y) {
+      if (!dragging) return;
+      const dx = x - startX;
+      const dy = y - startY;
+      if (!locked) {
+        if (Math.abs(dy) > Math.abs(dx)) { dragging = false; card.style.transform = ''; card.classList.remove('swiping'); return; }
+        locked = true;
+      }
+      curX = Math.min(0, dx); // só para a esquerda
+      card.style.transform = `translateX(${curX}px)`;
+    }
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('swiping');
+      if (curX < -THRESHOLD) {
+        // fly out
+        card.classList.add('fly-out');
+        card.style.transform = `translateX(-110%)`;
+        card.addEventListener('transitionend', () => {
+          const id = parseInt(card.dataset.id);
+          deletar(id, card);
+        }, { once: true });
+      } else {
+        card.style.transform = '';
+      }
+    }
+
+    // Touch
+    card.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    card.addEventListener('touchmove', e => { onMove(e.touches[0].clientX, e.touches[0].clientY); if (locked) e.preventDefault(); }, { passive: false });
+    card.addEventListener('touchend', onEnd);
+
+    // Mouse (desktop)
+    card.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+    window.addEventListener('mousemove', e => { if (dragging) onMove(e.clientX, e.clientY); });
+    window.addEventListener('mouseup', onEnd);
+  });
 }
 
 function exportarXLSX() {
