@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Atendimentos">
+<meta name="theme-color" content="#0f0f1a">
+<title>Atendimentos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --surface2: #22223a;
+  --accent: #c9a96e;
+  --accent2: #e8c99a;
+  --text: #f0ede6;
+  --text2: #9896a4;
+  --text3: #5a5869;
+  --success: #6fcf97;
+  --danger: #eb5757;
+  --border: rgba(255,255,255,0.07);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; overflow: hidden; }
+#app { display: flex; flex-direction: column; height: 100%; max-width: 430px; margin: 0 auto; position: relative; }
+header { padding: 52px 24px 16px; background: linear-gradient(180deg, var(--surface) 0%, transparent 100%); flex-shrink: 0; }
+.header-top { display: flex; align-items: flex-start; justify-content: space-between; }
+.app-title { font-family: 'DM Serif Display', serif; font-size: 28px; color: var(--text); line-height: 1.1; }
+.app-title span { color: var(--accent); font-style: italic; }
+.month-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: background 0.15s; }
+.month-chip:active { background: var(--surface); }
+.summary-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 16px 24px; flex-shrink: 0; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.stat-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.stat-value { font-size: 18px; font-weight: 500; color: var(--text); }
+.stat-value.gold { color: var(--accent); }
+.stat-value.green { color: var(--success); }
+.tabs { display: flex; gap: 4px; padding: 0 24px 16px; flex-shrink: 0; }
+.tab-btn { flex: 1; padding: 9px 0; border-radius: var(--radius-sm); border: none; background: transparent; color: var(--text3); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+.tab-btn.active { background: var(--accent); color: #1a1209; }
+.tab-btn:not(.active):active { background: var(--surface2); }
+.content { flex: 1; overflow-y: auto; padding: 0 24px 140px; -webkit-overflow-scrolling: touch; }
+.content::-webkit-scrollbar { display: none; }
+.form-section { margin-bottom: 12px; }
+.form-label { font-size: 11px; font-weight: 500; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; display: block; }
+.form-input, .form-select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; padding: 13px 16px; outline: none; transition: border-color 0.15s; -webkit-appearance: none; appearance: none; }
+.form-input:focus, .form-select:focus { border-color: var(--accent); }
+.form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%239896a4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px; }
+.form-select option { background: var(--surface); }
+.price-preview { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.price-preview-label { font-size: 12px; color: var(--text3); }
+.price-preview-value { font-size: 15px; font-weight: 500; color: var(--accent); }
+.btn-register { width: 100%; padding: 16px; background: var(--accent); color: #1a1209; border: none; border-radius: var(--radius); font-family: 'DM Serif Display', serif; font-size: 17px; cursor: pointer; margin-top: 20px; transition: opacity 0.15s, transform 0.1s; letter-spacing: 0.01em; }
+.btn-register:active { transform: scale(0.98); opacity: 0.9; }
+.day-group { margin-bottom: 20px; }
+.day-header { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.atendimento-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; position: relative; }
+.atendimento-dot { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; color: var(--accent); font-weight: 500; }
+.atendimento-info { flex: 1; min-width: 0; }
+.atendimento-servico { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.atendimento-cliente { font-size: 12px; color: var(--text2); margin-top: 1px; }
+.atendimento-valor { text-align: right; }
+.valor-bruto { font-size: 14px; font-weight: 500; color: var(--text); }
+.valor-liquido { font-size: 11px; color: var(--success); margin-top: 1px; }
+.btn-del { position: absolute; top: 8px; right: 8px; width: 22px; height: 22px; background: transparent; border: none; color: var(--text3); font-size: 18px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; line-height: 1; }
+.atendimento-card:hover .btn-del, .atendimento-card:active .btn-del { opacity: 1; }
+.empty { text-align: center; padding: 48px 24px; }
+.empty-emoji { font-size: 40px; margin-bottom: 16px; }
+.empty-title { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
+.empty-sub { font-size: 13px; color: var(--text3); }
+.toast { position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--success); color: #0a2e1a; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; opacity: 0; transition: all 0.3s; pointer-events: none; z-index: 100; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--danger); color: #fff; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 200; align-items: flex-end; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal-sheet { background: var(--surface); border-radius: 24px 24px 0 0; padding: 20px 24px 40px; width: 100%; max-width: 430px; border-top: 1px solid var(--border); }
+.modal-title { font-size: 14px; color: var(--text2); margin-bottom: 16px; text-align: center; }
+.month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.month-option { padding: 10px 4px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text2); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; text-align: center; transition: all 0.15s; }
+.month-option.active { background: var(--accent); color: #1a1209; border-color: var(--accent); }
+.resumo-header { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); margin-bottom: 16px; }
+.resumo-header span { color: var(--accent); font-style: italic; }
+.service-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; }
+.service-name { font-size: 14px; color: var(--text); }
+.service-count { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.service-total { font-size: 15px; font-weight: 500; color: var(--accent); }
+.section-divider { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin: 20px 0 10px; }
+.progress-bar-wrap { background: var(--surface2); border-radius: 4px; height: 6px; margin-top: 6px; overflow: hidden; }
+.progress-bar-fill { height: 6px; border-radius: 4px; background: var(--accent); transition: width 0.4s; }
+.btn-export { width: 100%; padding: 14px 16px; background: transparent; border: 1px solid var(--accent); border-radius: var(--radius); color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.15s; margin-top: 24px; }
+.btn-export:active { background: rgba(201,169,110,0.1); }
+.btn-export svg { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="header-top">
+      <div>
+        <div class="app-title">Meus<br><span>Atendimentos</span></div>
+      </div>
+      <button class="month-chip" onclick="openMonthPicker()" id="monthChipBtn">Mai 2026</button>
+    </div>
+  </header>
+
+  <div class="summary-strip">
+    <div class="stat-card">
+      <div class="stat-label">Atend.</div>
+      <div class="stat-value" id="statCount">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Faturado</div>
+      <div class="stat-value gold" id="statBruto">R$0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Seu ganho</div>
+      <div class="stat-value green" id="statLiquido">R$0</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('registrar', this)">Registrar</button>
+    <button class="tab-btn" onclick="switchTab('historico', this)">Histórico</button>
+    <button class="tab-btn" onclick="switchTab('resumo', this)">Resumo</button>
+  </div>
+
+  <div class="content" id="contentRegistrar">
+    <div class="form-section">
+      <label class="form-label">Serviço</label>
+      <select class="form-select" id="selectServico" onchange="updatePreview()">
+        <option value="">Selecione o serviço...</option>
+        <option value="Cílios Manutenção">Cílios Manutenção</option>
+        <option value="Cílios Colocação">Cílios Colocação</option>
+        <option value="Limpeza de Pele">Limpeza de Pele</option>
+        <option value="Microagulhamento">Microagulhamento</option>
+        <option value="Skinbooster">Skinbooster</option>
+        <option value="Brown Lamination">Brown Lamination</option>
+        <option value="Design Sobrancelhas">Design Sobrancelhas</option>
+        <option value="Drenagem Linfática">Drenagem Linfática</option>
+        <option value="Acupuntura">Acupuntura</option>
+        <option value="Hidragloss">Hidragloss</option>
+        <option value="Peeling Promo">Peeling Promo</option>
+        <option value="LPP PDRN">LPP PDRN</option>
+        <option value="Aula avulsa">Aula avulsa</option>
+      </select>
+    </div>
+    <div class="form-section">
+      <label class="form-label">Cliente</label>
+      <input class="form-input" id="inputCliente" type="text" placeholder="Nome da cliente..." autocomplete="off" autocorrect="off">
+    </div>
+    <div class="form-section">
+      <label class="form-label">Data</label>
+      <input class="form-input" id="inputData" type="date">
+    </div>
+    <div class="price-preview" id="pricePreview" style="display:none">
+      <div>
+        <div class="price-preview-label">Valor do serviço</div>
+        <div id="previewValor" style="font-size:13px; color:var(--text2); margin-top:2px"></div>
+      </div>
+      <div class="price-preview-value" id="previewLiquido"></div>
+    </div>
+    <button class="btn-register" onclick="registrarAtendimento()">Registrar atendimento</button>
+  </div>
+
+  <div class="content" id="contentHistorico" style="display:none">
+    <div id="historicoList"></div>
+  </div>
+
+  <div class="content" id="contentResumo" style="display:none">
+    <div id="resumoContent"></div>
+  </div>
+</div>
+
+<!-- Month Picker -->
+<div class="modal-overlay" id="monthModal" onclick="if(event.target===this)closeMonthPicker()">
+  <div class="modal-sheet">
+    <div class="modal-title">Escolher mês</div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- SheetJS para exportar .xlsx -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+const SERVICOS = {
+  'Cílios Manutenção':   { preco: 120, ganho: 0.7 },
+  'Cílios Colocação':    { preco: 180, ganho: 0.7 },
+  'Limpeza de Pele':     { preco: 150, ganho: 0.4 },
+  'Microagulhamento':    { preco: 180, ganho: 0.7 },
+  'Skinbooster':         { preco: 200, ganho: 0.7 },
+  'Brown Lamination':    { preco: 100, ganho: 0.7 },
+  'Design Sobrancelhas': { preco: 50,  ganho: 0.7 },
+  'Drenagem Linfática':  { preco: 150, ganho: 0.4 },
+  'Acupuntura':          { preco: 170, ganho: 0.4 },
+  'Hidragloss':          { preco: 100, ganho: 0.7 },
+  'Peeling Promo':       { preco: 197, ganho: 0.7 },
+  'LPP PDRN':            { preco: 200, ganho: 0.7 },
+  'Aula avulsa':         { preco: 23,  ganho: 1.0 },
+};
+
+const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+let now = new Date();
+let activeMonth = now.getMonth();
+let activeYear = now.getFullYear();
+
+function getKey() { return `atendimentos_${activeYear}_${activeMonth}`; }
+function loadData() { try { return JSON.parse(localStorage.getItem(getKey()) || '[]'); } catch(e) { return []; } }
+function saveData(data) { localStorage.setItem(getKey(), JSON.stringify(data)); }
+function fmtR(v) { return 'R$\u00a0' + Math.round(v).toLocaleString('pt-BR'); }
+function fmtDate(iso) { const [y,m,d] = iso.split('-'); return `${d}/${m}/${y}`; }
+
+document.getElementById('inputData').value = now.toISOString().split('T')[0];
+
+function updatePreview() {
+  const s = document.getElementById('selectServico').value;
+  const preview = document.getElementById('pricePreview');
+  if (!s || !SERVICOS[s]) { preview.style.display = 'none'; return; }
+  const { preco, ganho } = SERVICOS[s];
+  document.getElementById('previewValor').textContent = `${fmtR(preco)} × ${Math.round(ganho*100)}%`;
+  document.getElementById('previewLiquido').textContent = fmtR(preco * ganho);
+  preview.style.display = 'flex';
+}
+
+function registrarAtendimento() {
+  const servico = document.getElementById('selectServico').value;
+  const cliente = document.getElementById('inputCliente').value.trim();
+  const data = document.getElementById('inputData').value;
+  if (!servico) { showToast('Selecione um serviço!', true); return; }
+  if (!cliente) { showToast('Informe o nome da cliente!', true); return; }
+  if (!data) { showToast('Informe a data!', true); return; }
+  const { preco, ganho } = SERVICOS[servico];
+  const record = { id: Date.now(), servico, cliente, data, preco, ganho, liquido: Math.round(preco * ganho) };
+  const list = loadData();
+  list.push(record);
+  list.sort((a, b) => b.data.localeCompare(a.data));
+  saveData(list);
+  document.getElementById('selectServico').value = '';
+  document.getElementById('inputCliente').value = '';
+  document.getElementById('pricePreview').style.display = 'none';
+  document.getElementById('inputData').value = now.toISOString().split('T')[0];
+  updateSummary();
+  showToast('✓ Atendimento registrado!');
+}
+
+function updateSummary() {
+  const list = loadData();
+  const total = list.reduce((a, r) => a + r.preco, 0);
+  const liq = list.reduce((a, r) => a + r.liquido, 0);
+  document.getElementById('statCount').textContent = list.length;
+  document.getElementById('statBruto').textContent = fmtR(total);
+  document.getElementById('statLiquido').textContent = fmtR(liq);
+}
+
+function renderHistorico() {
+  const list = loadData();
+  const el = document.getElementById('historicoList');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-emoji">✨</div><div class="empty-title">Nenhum atendimento ainda</div><div class="empty-sub">Registre seu primeiro atendimento neste mês</div></div>`;
+    return;
+  }
+  const byDay = {};
+  list.forEach(r => { if (!byDay[r.data]) byDay[r.data] = []; byDay[r.data].push(r); });
+  let html = '';
+  Object.keys(byDay).sort((a,b) => b.localeCompare(a)).forEach(day => {
+    html += `<div class="day-group"><div class="day-header">${fmtDate(day)}</div>`;
+    byDay[day].forEach(r => {
+      const initials = r.cliente.split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+      html += `<div class="atendimento-card">
+        <div class="atendimento-dot">${initials}</div>
+        <div class="atendimento-info">
+          <div class="atendimento-servico">${r.servico}</div>
+          <div class="atendimento-cliente">${r.cliente}</div>
+        </div>
+        <div class="atendimento-valor">
+          <div class="valor-bruto">R$ ${r.preco}</div>
+          <div class="valor-liquido">→ R$ ${r.liquido}</div>
+        </div>
+        <button class="btn-del" onclick="deletar(${r.id})">×</button>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function deletar(id) {
+  if (!confirm('Excluir este atendimento?')) return;
+  const list = loadData().filter(r => r.id !== id);
+  saveData(list);
+  updateSummary();
+  renderHistorico();
+  renderResumo();
+}
+
+function exportarXLSX() {
+  const list = loadData();
+  if (!list.length) { showToast('Sem atendimentos para exportar!', true); return; }
+
+  const mesLabel = `${MESES_FULL[activeMonth]} ${activeYear}`;
+  const sorted = [...list].sort((a,b) => a.data.localeCompare(b.data));
+
+  // Sheet 1: Atendimentos
+  const rows = [
+    ['Relatório de Atendimentos — ' + mesLabel],
+    [],
+    ['Serviço', 'Cliente', 'Data', 'Valor (R$)', '% Ganho', 'Ganho Líquido (R$)']
+  ];
+  sorted.forEach(r => {
+    rows.push([r.servico, r.cliente, fmtDate(r.data), r.preco, Math.round(r.ganho * 100) + '%', r.liquido]);
+  });
+  // Totals
+  const totalBruto = sorted.reduce((a,r) => a + r.preco, 0);
+  const totalLiq = sorted.reduce((a,r) => a + r.liquido, 0);
+  rows.push([]);
+  rows.push(['', '', 'TOTAL', totalBruto, '', totalLiq]);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = [
+    { wch: 22 }, { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 20 }
+  ];
+
+  // Sheet 2: Resumo por serviço
+  const byService = {};
+  sorted.forEach(r => {
+    if (!byService[r.servico]) byService[r.servico] = { count: 0, bruto: 0, liq: 0 };
+    byService[r.servico].count++;
+    byService[r.servico].bruto += r.preco;
+    byService[r.servico].liq += r.liquido;
+  });
+  const resumoRows = [
+    ['Resumo por Serviço — ' + mesLabel],
+    [],
+    ['Serviço', 'Qtd. Atendimentos', 'Total Faturado (R$)', 'Total Ganho (R$)']
+  ];
+  Object.entries(byService).sort((a,b) => b[1].bruto - a[1].bruto).forEach(([name, val]) => {
+    resumoRows.push([name, val.count, val.bruto, val.liq]);
+  });
+  resumoRows.push([]);
+  resumoRows.push(['TOTAL', sorted.length, totalBruto, totalLiq]);
+  const ws2 = XLSX.utils.aoa_to_sheet(resumoRows);
+  ws2['!cols'] = [{ wch: 22 }, { wch: 20 }, { wch: 22 }, { wch: 22 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Atendimentos');
+  XLSX.utils.book_append_sheet(wb, ws2, 'Resumo por Serviço');
+
+  const filename = `Atendimentos_${MESES_FULL[activeMonth]}_${activeYear}.xlsx`;
+  XLSX.writeFile(wb, filename);
+  showToast('✓ Planilha exportada!');
+}
+
+function renderResumo() {
+  const list = loadData();
+  const el = document.getElementById('resumoContent');
+  if (!list.length) {
+    el.innerHTML = `<div class="resumo-header">Resumo de <span>${MESES[activeMonth]}</span></div><div class="empty"><div class="empty-emoji">📊</div><div class="empty-title">Sem dados ainda</div><div class="empty-sub">Registre atendimentos para ver o resumo</div></div>`;
+    return;
+  }
+  const total = list.reduce((a,r) => a + r.preco, 0);
+  const liq = list.reduce((a,r) => a + r.liquido, 0);
+  const byService = {};
+  list.forEach(r => {
+    if (!byService[r.servico]) byService[r.servico] = { count: 0, total: 0, liq: 0 };
+    byService[r.servico].count++;
+    byService[r.servico].total += r.preco;
+    byService[r.servico].liq += r.liquido;
+  });
+  const serviceRows = Object.entries(byService).sort((a,b) => b[1].total - a[1].total);
+  const maxTotal = serviceRows[0]?.[1].total || 1;
+  let html = `<div class="resumo-header">Resumo de <span>${MESES[activeMonth]}</span></div>`;
+  html += `<div class="section-divider">Por serviço</div>`;
+  serviceRows.forEach(([name, val]) => {
+    const pct = Math.round(val.total / maxTotal * 100);
+    html += `<div class="service-row">
+      <div style="flex:1; min-width:0">
+        <div class="service-name">${name}</div>
+        <div class="service-count">${val.count}× · ganho: R$ ${val.liq}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="service-total" style="margin-left:12px">R$ ${val.total}</div>
+    </div>`;
+  });
+  html += `<div class="section-divider">Totais do mês</div>`;
+  html += `<div class="service-row"><div><div class="service-name">Faturamento bruto</div><div class="service-count">${list.length} atendimentos</div></div><div class="service-total">R$ ${total}</div></div>`;
+  html += `<div class="service-row"><div><div class="service-name">Seu ganho líquido</div><div class="service-count">Após desconto do espaço</div></div><div style="font-size:15px;font-weight:500;color:var(--success)">R$ ${liq}</div></div>`;
+  html += `<button class="btn-export" onclick="exportarXLSX()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="14 3 14 9 20 9"/>
+      <line x1="12" y1="13" x2="12" y2="17"/><polyline points="9 16 12 19 15 16"/>
+    </svg>
+    Exportar planilha (.xlsx)
+  </button>`;
+  el.innerHTML = html;
+}
+
+let activeTab = 'registrar';
+function switchTab(tab, btn) {
+  activeTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('contentRegistrar').style.display = tab === 'registrar' ? '' : 'none';
+  document.getElementById('contentHistorico').style.display = tab === 'historico' ? '' : 'none';
+  document.getElementById('contentResumo').style.display = tab === 'resumo' ? '' : 'none';
+  if (tab === 'historico') renderHistorico();
+  if (tab === 'resumo') renderResumo();
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isError ? ' error' : '') + ' show';
+  setTimeout(() => t.className = 'toast', 2400);
+}
+
+function updateMonthChip() {
+  document.getElementById('monthChipBtn').textContent = `${MESES[activeMonth]} ${activeYear}`;
+}
+
+function openMonthPicker() {
+  const grid = document.getElementById('monthGrid');
+  grid.innerHTML = '';
+  MESES.forEach((m, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'month-option' + (i === activeMonth ? ' active' : '');
+    btn.textContent = m;
+    btn.onclick = () => {
+      activeMonth = i;
+      closeMonthPicker();
+      updateMonthChip();
+      updateSummary();
+      if (activeTab === 'historico') renderHistorico();
+      if (activeTab === 'resumo') renderResumo();
+    };
+    grid.appendChild(btn);
+  });
+  document.getElementById('monthModal').classList.add('open');
+}
+
+function closeMonthPicker() {
+  document.getElementById('monthModal').classList.remove('open');
+}
+
+updateMonthChip();
+updateSummary();
+</script>
+</body>
+</html>
