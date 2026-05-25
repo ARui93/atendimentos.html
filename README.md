@@ -2,10 +2,17 @@
 
 > App mobile-first para profissionais da beleza registrarem atendimentos, acompanharem ganhos e exportarem relatórios mensais.
 
+![HTML](https://img.shields.io/badge/HTML-puro-orange?style=flat-square&logo=html5)
+![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-yellow?style=flat-square&logo=javascript)
+![PWA Ready](https://img.shields.io/badge/PWA-ready-green?style=flat-square)
+
+---
+
 ## ✨ Funcionalidades
 
 - **Registrar atendimentos** com serviço, cliente e data
 - **Cálculo automático** do ganho líquido — cada serviço tem seu próprio preço e percentual de comissão configurados diretamente no código
+- **Serviço "Outros"** para registrar qualquer procedimento fora da lista, informando descrição, valor e percentual de ganho na hora
 - **Histórico mensal** agrupado por dia, com opção de excluir registros
 - **Resumo visual** com ranking de serviços e totais do mês
 - **Exportar planilha `.xlsx`** com duas abas: atendimentos detalhados e resumo por serviço
